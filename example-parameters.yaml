@@ -1,0 +1,42 @@
+---
+###
+# LZ and DMZ parameters
+- ParameterKey:   LZVpcSpecifications
+  ParameterValue: VpcTagValue=MyLZ
+- ParameterKey:   DMZVpcSpecifications
+  ParameterValue: VpcCIDR=10.234.192.0/27;Subnets=a:10.234.192.0/28,b:10.234.192.16/28
+- ParameterKey:   DMZVpcSubnetCount
+  ParameterValue: "2"
+- ParameterKey:   DMZDNSHostedZoneSpecifications
+  ParameterValue: ZoneName=dmzdomain.internal
+
+###
+# DMZtoLZ communication direction
+- ParameterKey:   DMZtoLZ0EndpointSpecifications
+  ParameterValue: LoadBalancerArns=<LZ_LOADBALANCER_ARN>;TrustedDMZClients=10.0.0.127
+- ParameterKey:   DMZtoLZ0EndpointDNSSpecs
+  ParameterValue: FQDN=endpoint.dmzdomain.internal
+- ParameterKey:   DMZtoLZ0VPCEndpointAllowedPrincipals
+  ParameterValue: ""
+
+###
+# LZtoDMZ communication direction
+- ParameterKey:   LZtoDMZ0EndpointSpecifications
+  ParameterValue: LoadBalancerAttributes=load_balancing.cross_zone.enabled:true;EndpointSecurityGroupIds=<LZ_SECURITY_GROUP_IDS>
+- ParameterKey:   LZtoDMZ0EndpointDNSSpecs
+  ParameterValue: FQDN=test.lzinternaldomain  # Please change endpoint FQDN at Landing Zone side. Let an empty string if you do not a name for the endpoint
+- ParameterKey:   LZtoDMZ0VPCEndpointAllowedPrincipals
+  ParameterValue: ""
+  # Listener 0
+- ParameterKey:   LZtoDMZ0x0EndpointListenerSpecifications
+  ParameterValue: ListenerPort=22;TargetPort=22;TargetProtocol=TCP;Targets=10.0.0.3,10.0.0.2:4422;TargetGroupAttributes=deregistration_delay.timeout_seconds:60
+- ParameterKey:   LZtoDMZ0x0EndpointListenerHealthCheckProtocol
+  ParameterValue: "HTTP"
+- ParameterKey:   LZtoDMZ0x0EndpointListenerCertificateARNs
+  ParameterValue: ""
+  # Listener 1
+- ParameterKey:   LZtoDMZ0x1EndpointListenerSpecifications
+  ParameterValue: ListenerPort=80;Targets=10.0.0.3,10.0.0.4:8080;TargetGroupAttributes=deregistration_delay.timeout_seconds:90,proxy_protocol_v2.enabled:true
+- ParameterKey:   LZtoDMZ0x1EndpointListenerCertificateARNs
+  ParameterValue: ""
+
