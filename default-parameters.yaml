@@ -1,0 +1,141 @@
+---
+###
+# LZ and DMZ parameters
+#
+# LZVpcSpecifications: List of KV
+#    VpcTagValue (required): String
+#       The value of tag 'interconnnect-dmz:lz-name' to lookup while detecting the LandingZone Vpc and Subnets.
+- ParameterKey:   LZVpcSpecifications
+  ParameterValue: ""
+# 
+# DMZVpcSpecifications:
+#    VpcCIDR (required): String
+#       The network CIDR for the DMZ VPC (Default one is a 64 IP address wide that is the minimul value)
+#    Subnets (required): List of KV Items
+#       The characteristics of subnet to create. Format: <AZ suffix letter>:<subnet CIDR>,...
+- ParameterKey:   DMZVpcSpecifications
+  ParameterValue: VpcCIDR=10.234.192.0/27;Subnets=a:10.234.192.0/28,b:10.234.192.16/28
+#
+# DMZVpcSubnetCount: Integer
+#    The total number of subnets to create into the DMZ VPC
+- ParameterKey:   DMZVpcSubnetCount
+  ParameterValue: "2"
+#
+# DMZDNSHostedZoneSpecifications: List of KV Items
+#    ZoneName (optional): DNS Domain name associated to the DMZ VPC
+#
+# Note: If DMZDNSHostedZoneSpecifications is left empty, no hosted zone is created in the DMZ VPC
+- ParameterKey:   DMZDNSHostedZoneSpecifications
+  ParameterValue: ""
+
+
+
+###
+# DMZtoLZ communication direction
+#
+#
+# DMZtoLZ0EndpointSpecifications: List of KV Items
+#    Describes the Endpoint configuration allowing communications from DMZ VPC resources toward LZ ones.
+#    If this field is left empty, no resource will be deployed to manage this communication direction.
+#
+#    LoadBalancerArns (required): List of ARNs
+#       List of NLB ARNs to associate to the DMZ VPC endpoint exposing them to VPC resources.
+#    TrustedDMZClients (recommended): List of IP addresses, IP CIDR networks and SecurityGroups
+#       This filed controls directly the Ingress rules of the Security group associated to the DMZ endpoint.
+#       If this field is undefined, no one can access the endpoint.
+- ParameterKey:   DMZtoLZ0EndpointSpecifications
+  ParameterValue: ""
+#
+# DMZtoLZ0EndpointDNSSpecs: List of KV items
+#    FQDN (optional): String
+#       Defines the DNS name of the endpoint in the DMZ VPC Private zone (accessible through the Route53 Inbound resolver)
+#       WARNING: The 'FQDN' MUST be part of the DMZ domain name defined in 'DMZDNSHostedZoneSpecifications'
+- ParameterKey:   DMZtoLZ0EndpointDNSSpecs
+  ParameterValue: ""
+#
+# DMZtoLZ0VPCEndpointAllowedPrincipals: List of ARNs
+#    List of principal ARNs that are authorized to create a endpoint toward the NLB located in the DMZ VPC.
+#    If left empty, only VPC endpoint in the same account are allowed. If set to '*', any valid AWS account would
+#    be allowed to connect to the endpoint (May not be what you are expecting!)
+- ParameterKey:   DMZtoLZ0VPCEndpointAllowedPrincipals
+  ParameterValue: ""
+
+
+
+###
+# LZtoDMZ communication direction
+#
+# LZtoDMZ0EndpointSpecifications: List of KV Items
+#    Defines the characteristics of the endpoint in the LZ VPC and associated NLB in the DMZ VPC to allow
+#    communication from LZ resources toward DMZ ones.
+#    If this field is left empty, no resource will be deployed to manage this communication direction.
+#
+#    LoadBalancerAttributes (optional): List of KV Items
+#       For the list of KV Items, please see attributes applicable to NLBs here: 
+#       https://docs.aws.amazon.com/elasticloadbalancing/latest/APIReference/API_LoadBalancerAttribute.html
+#    EndpointSecurityGroupIds (optional): List of string
+#       List of Security Group Ids defined in the LZ VPC to attach to the VPC Endpoint in the LZ VPC.
+#       If left empty, the 'default' VPC security group is attached by default.
+- ParameterKey:   LZtoDMZ0EndpointSpecifications
+  ParameterValue: ""
+#
+# LZtoDMZ0EndpointDNSSpecs: List of KV Items
+#    DNS related parameters for this endpoint.
+#
+#    FQDN (optional): String
+#       FQDN DNS name for the endpoint in the LZ VPC. The Private Hosted zone must exist prior to solution deployment.
+- ParameterKey:   LZtoDMZ0EndpointDNSSpecs
+  ParameterValue: ""
+#
+# LZtoDMZ0VPCEndpointAllowedPrincipals: List of Principal ARNs
+#    List of principal ARNs that are authorized to create a endpoint toward the NLB located in the DMZ VPC.
+#    If left empty, only VPC endpoint in the same accouint are allowed. If set to '*', any valid AWS account would
+#    be allowed to connect to the endpoint (May not what you are expecting!)
+- ParameterKey:   LZtoDMZ0VPCEndpointAllowedPrincipals
+  ParameterValue: ""
+# 
+# Listener #{0..N} Configuration
+#
+# LZtoDMZ0x0EndpointListenerSpecifications: List of KV Items
+#    Configuration of a couple Listener and TargetGroup
+#
+#    ListenerPort (optional; default 80) : Integer
+#       Port for the listener
+#    ListenerProtocol (optional; default to TCP): One value among ["TLS", "TCP", "UDP", "TCP_UDP"]
+#       The TCP/IP protocol that use clients to reach the NLB.
+#
+#    TargetProtocol (optional; default to TCP): One value among ["TLS", "TCP", "UDP", "TCP_UDP"]
+#       The TCP/IP protocol to use to reach Targets from the NLB.
+#    TargetPort (optional; default 80) : Integer
+#       Default target group port (if not override at target level)
+#    Targets (optional): List of String and KV Items
+#       List of targets located in the DMZ VPC and to connect DMZ accesible resources (across VPN, On-Prem Datacenters, DirectConnect, VPC peering etc...).
+#       Targets can be IP address or instance id. You can't mix IP addresses and instance id as targets.
+#       Target port can be overriden on a per target basis. 
+#               Ex: Targets=10.0.0.1:3000,10.0.0.2
+#               Port 3000 on target 10.0.0.1 will be configured in the TargetGroup and default TargetGroup port will be used the target 10.0.0.2
+#    TargetGroupAttributes (optional): List of KV Items
+#       Any combination of TargetGroup attributes applicable to a NLB TG is allowed.
+#       See complete reference here: https://docs.aws.amazon.com/elasticloadbalancing/latest/APIReference/API_TargetGroupAttribute.html
+#
+#    HealthCheckIntervalSeconds, HealthCheckPath, HealthCheckPort, HealthyThresholdCount, UnhealthyThresholdCount (optional):
+#       Health check attributes as specified in https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-targetgroup.html
+#    Matcher.HttpCode: Integer
+#       HttpCode value for the Matcher object as specified in URL above.
+- ParameterKey:   LZtoDMZ0x0EndpointListenerSpecifications
+  ParameterValue: ""
+#
+# LZtoDMZ0x0EndpointListenerHealthCheckProtocol: String
+#    Control the TargetGroup HealthCheckProtocol parameter. Possible values are ["HTTP", "HTTPS", "TCP", "TLS"]
+#
+#    WARNING: When you set the TargetGroup parameter 'proxy_protocol_v2.enabled' to 'true', the healthcheck protocol silently switch back to TCP even
+#    user asked for another protocol.
+- ParameterKey:   LZtoDMZ0x0EndpointListenerHealthCheckProtocol
+  ParameterValue: "TCP"
+#
+# LZtoDMZ0x0EndpointListenerCertificateARNs: List of ACM Certificate ARNs
+#     List of ACM certificate ARNs to associate to a specific listener configured with TLS protocol
+- ParameterKey:   LZtoDMZ0x0EndpointListenerCertificateARNs
+  ParameterValue: ""
+
+

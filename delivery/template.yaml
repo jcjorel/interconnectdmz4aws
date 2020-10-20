@@ -1,0 +1,769 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Inter-Connect DMZ pattern deployment
+
+Parameters:
+  LZVpcSpecifications:
+    Type: String
+    MinLength: 10
+    Description: "LandingZone Vpc specification where to deploy the DMZ Endpoint.\
+      \  Format: VcpTagValue=<tag_value>.  VPC and Subnets with tag 'awssas:lz-name'\
+      \ and this value will considered as the LandingZone network resources to connect\
+      \ to."
+
+  DMZVpcSpecifications:
+    Type: String
+    MinLength: 10
+    Description: "Vpc specification where to deploy the DMZ. Format: VcpCIDR=<CIDR>;Subnets=<az-suffix:CIDR>,<az-suffix:CIDR>,..."
+    Default: "VpcCIDR=10.234.192.0/27;Subnets=a:10.234.192.0/28,b:10.234.192.16/28"
+  DMZVpcSubnetCount:
+    Type: String
+    ConstraintDescription: "[2|3|4|5]"
+    Description: "The precise number of Subnet to create (whatever is in 'DMZVpcSpecifications')"
+    Default: "2"
+
+  S3Bucket:
+    Type: String
+    Description: "(Optional) Location of the Lambda artifacts: S3 Bucket name"
+    Default: ""
+
+  S3Prefix:
+    Type: String
+    ConstraintDescription: "[A-Za-z0-9][-A-Za-z0-9]+"
+    Description: "(Optional) Location of the Lambda artifacts: S3 Bucket name"
+    Default: ""
+
+  HelperLibHash:
+    Type: String
+    Description: "HelperLibHash string to force custom resource reload (LEAVE THIS\
+      \ FIELD BLANK!)"
+    Default: "eb57c82d86c8b0f9d1a9d8db2844e0b77a96cfb0c4d777155539e7d12f4ff6bd"
+
+  DMZDNSHostedZoneSpecifications:
+    Type: String
+    Description: "(Optional) DNS domain name for the Route53 Hosted Zone in DMZ DMZVPC.\
+      \ Format: Ex: ZoneName=sasdomain.internal"
+    Default: ""
+
+  
+  
+  LZtoDMZ0EndpointSpecifications:
+    Type: String
+
+    Description: "Format 'LoadBalancerAttributes=load_balancing.cross_zone.enabled=true;LoadBalancerAttributes=idle_timeout.timeout_seconds:80;EndpointSecurityGroupIds=<sg-xxx>,<sg-yyy>,'\
+      \  See full list of supported keywords in documentation. "
+    Default: ""
+
+  
+  
+  LZtoDMZ0x0EndpointListenerSpecifications:
+    Type: String
+    Description: "Format 'ListenerPort=80;ListenerProtocol=[TCP|UDP|TLS];TargetPort=80;TargetProtocol=[TCP|UDP|TLS];Targets=<ip-address_or_instance_id>:<port>;<ip-address_or_instance_id>:<port>;TargetGroupAttributes=deregistration_delay.timeout_seconds:60,proxy_protocol_v2.enabled:true'\
+      \  See full list of supported keywords in documentation.  Note: ip-address and\
+      \ instance_id are mutually exclusive "
+    Default: ""
+
+  LZtoDMZ0x0EndpointListenerHealthCheckProtocol:
+    Type: String
+    ConstraintDescription: "[HTTP|HTTPS|TCP]"
+    Description: "Healthcheck protocol to use to assess health of target group members."
+    Default: "TCP"
+
+  LZtoDMZ0x0EndpointListenerCertificateARNs:
+    Type: String
+    Description: "(Optional) List of ACM TLS Certificate ARNs for NLB listener"
+    Default: ""
+  LZtoDMZ0x1EndpointListenerSpecifications:
+    Type: String
+    Description: "Format 'ListenerPort=80;ListenerProtocol=[TCP|UDP|TLS];TargetPort=80;TargetProtocol=[TCP|UDP|TLS];Targets=<ip-address_or_instance_id>:<port>;<ip-address_or_instance_id>:<port>;TargetGroupAttributes=deregistration_delay.timeout_seconds:60,proxy_protocol_v2.enabled:true'\
+      \  See full list of supported keywords in documentation.  Note: ip-address and\
+      \ instance_id are mutually exclusive "
+    Default: ""
+
+  LZtoDMZ0x1EndpointListenerHealthCheckProtocol:
+    Type: String
+    ConstraintDescription: "[HTTP|HTTPS|TCP]"
+    Description: "Healthcheck protocol to use to assess health of target group members."
+    Default: "TCP"
+
+  LZtoDMZ0x1EndpointListenerCertificateARNs:
+    Type: String
+    Description: "(Optional) List of ACM TLS Certificate ARNs for NLB listener"
+    Default: ""
+  LZtoDMZ0x2EndpointListenerSpecifications:
+    Type: String
+    Description: "Format 'ListenerPort=80;ListenerProtocol=[TCP|UDP|TLS];TargetPort=80;TargetProtocol=[TCP|UDP|TLS];Targets=<ip-address_or_instance_id>:<port>;<ip-address_or_instance_id>:<port>;TargetGroupAttributes=deregistration_delay.timeout_seconds:60,proxy_protocol_v2.enabled:true'\
+      \  See full list of supported keywords in documentation.  Note: ip-address and\
+      \ instance_id are mutually exclusive "
+    Default: ""
+
+  LZtoDMZ0x2EndpointListenerHealthCheckProtocol:
+    Type: String
+    ConstraintDescription: "[HTTP|HTTPS|TCP]"
+    Description: "Healthcheck protocol to use to assess health of target group members."
+    Default: "TCP"
+
+  LZtoDMZ0x2EndpointListenerCertificateARNs:
+    Type: String
+    Description: "(Optional) List of ACM TLS Certificate ARNs for NLB listener"
+    Default: ""
+
+
+
+  LZtoDMZ0EndpointDNSSpecs:
+    Type: String
+    Description: "(Optional) DNS FQDN name for the endpoint in the LZ VPC"
+    Default: ""
+
+  LZtoDMZ0VPCEndpointAllowedPrincipals:
+    Type: String
+    Description: "Comma seperated list of ARN principals (Account, IAM Role/User)\
+      \ allowed to connect to the endpoint. Note: Left empty, none can connect to\
+      \ ; Set to '*', every valid AWS customer can connect"
+    Default: ""
+  DMZtoLZ0EndpointSpecifications:
+    Type: String
+
+    Description: "Format 'LoadBalancerArns=<arn1>,<arn2>. "
+    Default: ""
+
+  
+
+  DMZtoLZ0EndpointDNSSpecs:
+    Type: String
+    Description: "(Optional) DNS FQDN name for the endpoint in the DMZ VPC"
+    Default: ""
+
+  DMZtoLZ0VPCEndpointAllowedPrincipals:
+    Type: String
+    Description: "Comma seperated list of ARN principals (Account, IAM Role/User)\
+      \ allowed to connect to the endpoint. Note: Left empty, none can connect to\
+      \ ; Set to '*', every valid AWS customer can connect"
+    Default: ""
+
+
+
+Conditions:
+  HasDMZHostedZone: !Not [!Equals [!Ref DMZDNSHostedZoneSpecifications, ""]]
+  HasSubnet4: !Equals [!Ref DMZVpcSubnetCount, "5"]
+  HasSubnet3: !Or [!Equals [!Ref DMZVpcSubnetCount, "4"], Condition: HasSubnet4]
+  HasSubnet2: !Or [!Equals [!Ref DMZVpcSubnetCount, "3"], Condition: HasSubnet3]
+  HasLZtoDMZ0Direction: !Not [!Equals [!Ref LZtoDMZ0EndpointSpecifications, ""]]
+  HasLZtoDMZ0x0DirectionListener: !Not [!Equals [!Ref LZtoDMZ0x0EndpointListenerSpecifications,
+      ""]]
+  HasLZtoDMZ0x0DirectionListenerCertificate: !And [!Not [!Equals [!Ref LZtoDMZ0x0EndpointListenerCertificateARNs,
+        ""]], Condition: HasLZtoDMZ0Direction]
+  HasLZtoDMZ0x0HealthHTTPHealthCheck: !Not [!Equals [!Ref LZtoDMZ0x0EndpointListenerHealthCheckProtocol,
+      "TCP"]]
+  HasLZtoDMZ0x1DirectionListener: !Not [!Equals [!Ref LZtoDMZ0x1EndpointListenerSpecifications,
+      ""]]
+  HasLZtoDMZ0x1DirectionListenerCertificate: !And [!Not [!Equals [!Ref LZtoDMZ0x1EndpointListenerCertificateARNs,
+        ""]], Condition: HasLZtoDMZ0Direction]
+  HasLZtoDMZ0x1HealthHTTPHealthCheck: !Not [!Equals [!Ref LZtoDMZ0x1EndpointListenerHealthCheckProtocol,
+      "TCP"]]
+  HasLZtoDMZ0x2DirectionListener: !Not [!Equals [!Ref LZtoDMZ0x2EndpointListenerSpecifications,
+      ""]]
+  HasLZtoDMZ0x2DirectionListenerCertificate: !And [!Not [!Equals [!Ref LZtoDMZ0x2EndpointListenerCertificateARNs,
+        ""]], Condition: HasLZtoDMZ0Direction]
+  HasLZtoDMZ0x2HealthHTTPHealthCheck: !Not [!Equals [!Ref LZtoDMZ0x2EndpointListenerHealthCheckProtocol,
+      "TCP"]]
+  HasLZtoDMZ0AllowedPrincipals: !And [!Not [!Equals [!Ref LZtoDMZ0VPCEndpointAllowedPrincipals,
+        ""]], Condition: HasLZtoDMZ0Direction]
+  HasLZtoDMZ0EndpointDNSSpecs: !And [!Not [!Equals [!Ref LZtoDMZ0EndpointDNSSpecs,
+        ""]], Condition: HasLZtoDMZ0Direction]
+  HasDMZtoLZ0Direction: !Not [!Equals [!Ref DMZtoLZ0EndpointSpecifications, ""]]
+  HasDMZtoLZ0AllowedPrincipals: !And [!Not [!Equals [!Ref DMZtoLZ0VPCEndpointAllowedPrincipals,
+        ""]], Condition: HasDMZtoLZ0Direction]
+  HasDMZtoLZ0EndpointDNSSpecs: !And [!Not [!Equals [!Ref DMZtoLZ0EndpointDNSSpecs,
+        ""]], Condition: HasDMZtoLZ0Direction]
+
+
+Resources:
+  DMZHostedZone:
+    Type: AWS::Route53::HostedZone
+    Condition: HasDMZHostedZone
+    Properties:
+      HostedZoneConfig:
+        Comment: !Sub "Hosted Zone for DMZ ${AWS::StackName}"
+      Name: !GetAtt GetDMZVpcConfig.DMZHostedZone.ZoneName
+      VPCs:
+      - VPCId: !Ref DMZVPC
+        VPCRegion: !Ref AWS::Region
+
+  DMZHostedZoneResolverSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub "${AWS::StackName} - Security for DMZ Route53 resolver"
+      SecurityGroupEgress:
+      - IpProtocol: tcp
+        FromPort: 53
+        ToPort: 53
+        CidrIp: !GetAtt GetDMZVpcConfig.DMZHostedZone.ResolverSourceCIDR
+      - IpProtocol: udp
+        FromPort: 53
+        ToPort: 53
+        CidrIp: !GetAtt GetDMZVpcConfig.DMZHostedZone.ResolverSourceCIDR
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 53
+        ToPort: 53
+        CidrIp: !GetAtt GetDMZVpcConfig.DMZHostedZone.ResolverSourceCIDR
+      - IpProtocol: udp
+        FromPort: 53
+        ToPort: 53
+        CidrIp: !GetAtt GetDMZVpcConfig.DMZHostedZone.ResolverSourceCIDR
+      VpcId: !Ref DMZVPC
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-HostedZoneResolverSecurityGroup"]]
+
+  DMZHostedZoneInboundResolver:
+    Type: AWS::Route53Resolver::ResolverEndpoint
+    Properties:
+      Direction: INBOUND
+      IpAddresses: !GetAtt GetLiveConfig.DMZHostedZone.IpAddresses
+      Name: !Ref AWS::StackName
+      SecurityGroupIds:
+      - !Ref DMZHostedZoneResolverSecurityGroup
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-HostedZone"]]
+
+
+  HelperLibExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: "Allow"
+          Principal:
+            Service: ["lambda.amazonaws.com"]
+          Action: ["sts:AssumeRole"]
+      Path: "/"
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess"
+      - "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+      Policies:
+      - PolicyName: ec2
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action: ["ec2:Get*", "ec2:List*", "ec2:Describe*"]
+            Resource: '*'
+
+  HelperLib:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Code:
+        S3Bucket: !Ref S3Bucket
+        S3Key: !Sub "${S3Prefix}/${HelperLibHash}.zip"
+      Handler: "helperlib.handler"
+      Role: !GetAtt HelperLibExecutionRole.Arn
+      Runtime: "python3.7"
+      Timeout: 350
+      Environment:
+        Variables:
+          PYTHONPATH: "/var/task/site-packages:/opt:/opt/site-packages"
+
+  GetDMZVpcConfig:
+    Type: "Custom::HelperLib"
+    Properties:
+      ServiceToken: !GetAtt HelperLib.Arn
+      Helper: GetDMZVpcConfig
+      StackName: !Ref AWS::StackName
+      DMZVpcSpecifications: !Ref DMZVpcSpecifications
+      DMZVpcSubnetCount: !Ref DMZVpcSubnetCount
+      Region: !Sub "${AWS::Region}"
+      DMZDNSHostedZoneSpecifications: !Ref DMZDNSHostedZoneSpecifications
+
+  GetLZVpcConfig:
+    Type: "Custom::HelperLib"
+    Properties:
+      ServiceToken: !GetAtt HelperLib.Arn
+      Helper: GetLZVpcConfig
+      StackName: !Ref AWS::StackName
+      LZVpcSpecifications: !Ref LZVpcSpecifications
+      DMZVpcSpecifications: !Ref DMZVpcSpecifications
+      DMZVpcSubnetCount: !Ref DMZVpcSubnetCount
+      Region: !Sub "${AWS::Region}"
+      DMZDNSHostedZoneSpecifications: !Ref DMZDNSHostedZoneSpecifications
+
+  GetLiveConfig:
+    Type: "Custom::HelperLib"
+    DependsOn: DMZVPC
+    Properties:
+      ServiceToken: !GetAtt HelperLib.Arn
+      Helper: GetLiveConfig
+      StackName: !Ref AWS::StackName
+      DMZVpcSpecifications: !Ref DMZVpcSpecifications
+      DMZVpcSubnetCount: !Ref DMZVpcSubnetCount
+      TimeOut: 300
+
+  DMZVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !GetAtt GetDMZVpcConfig.VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-VPC"]]
+
+  Subnet0:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !GetAtt GetDMZVpcConfig.Subnet0.AZ
+      CidrBlock: !GetAtt GetDMZVpcConfig.Subnet0.CIDR
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref DMZVPC
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-Subnet0"]]
+
+  Subnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !GetAtt GetDMZVpcConfig.Subnet1.AZ
+      CidrBlock: !GetAtt GetDMZVpcConfig.Subnet1.CIDR
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref DMZVPC
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-Subnet1"]]
+
+  Subnet2:
+    Type: AWS::EC2::Subnet
+    Condition: HasSubnet2
+    Properties:
+      AvailabilityZone: !GetAtt GetDMZVpcConfig.Subnet2.AZ
+      CidrBlock: !GetAtt GetDMZVpcConfig.Subnet2.CIDR
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref DMZVPC
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-Subnet2"]]
+
+  Subnet3:
+    Type: AWS::EC2::Subnet
+    Condition: HasSubnet3
+    Properties:
+      AvailabilityZone: !GetAtt GetDMZVpcConfig.Subnet3.AZ
+      CidrBlock: !GetAtt GetDMZVpcConfig.Subnet3.CIDR
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref DMZVPC
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-Subnet3"]]
+
+  Subnet4:
+    Type: AWS::EC2::Subnet
+    Condition: HasSubnet4
+    Properties:
+      AvailabilityZone: !GetAtt GetDMZVpcConfig.Subnet4.AZ
+      CidrBlock: !GetAtt GetDMZVpcConfig.Subnet4.CIDR
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref DMZVPC
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-Subnet4"]]
+
+  
+  
+   ## 
+   # Configure LZtoDMZ endpoint
+   #
+  LZtoDMZ0EndpointConfig:
+    Type: "Custom::HelperLib"
+    Properties:
+      ServiceToken: !GetAtt HelperLib.Arn
+      Helper: EndpointConfig
+      EndpointSpecifications: !Ref LZtoDMZ0EndpointSpecifications
+      Region: !Sub "${AWS::Region}"
+      EndpointDNSSpecs: !Ref LZtoDMZ0EndpointDNSSpecs
+
+
+  LZtoDMZ0NetworkLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DependsOn: DMZHostedZoneInboundResolver  # Make sure that Resolver address is left available to the Resolver
+    Condition: HasLZtoDMZ0Direction
+    Properties:
+      Scheme: internal
+      Subnets:
+      - !Ref Subnet0
+      - !Ref Subnet1
+      - !If [HasSubnet2, !Ref Subnet2, !Ref AWS::NoValue]
+      - !If [HasSubnet3, !Ref Subnet3, !Ref AWS::NoValue]
+      - !If [HasSubnet4, !Ref Subnet4, !Ref AWS::NoValue]
+      Type: network
+      LoadBalancerAttributes: !GetAtt LZtoDMZ0EndpointConfig.LoadBalancerAttributesList
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-LZtoDMZ0NLB"]]
+
+   
+  LZtoDMZ0x0EndpointListenerConfig:
+    Type: "Custom::HelperLib"
+    Condition: HasLZtoDMZ0x0DirectionListener
+    Properties:
+      ServiceToken: !GetAtt HelperLib.Arn
+      Helper: EndpointListenerConfig
+      EndpointListenerSpecifications: !Ref LZtoDMZ0x0EndpointListenerSpecifications
+      Region: !Sub "${AWS::Region}"
+      HealthCheckProtocol: !Ref LZtoDMZ0x0EndpointListenerHealthCheckProtocol
+
+  LZtoDMZ0x0NetworkLoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: HasLZtoDMZ0x0DirectionListener
+    Properties:
+      Port: !GetAtt LZtoDMZ0x0EndpointListenerConfig.TargetPort
+      Protocol: !GetAtt LZtoDMZ0x0EndpointListenerConfig.TargetProtocol
+      VpcId: !Ref DMZVPC
+      TargetType: !GetAtt LZtoDMZ0x0EndpointListenerConfig.TargetType
+      Targets: !GetAtt LZtoDMZ0x0EndpointListenerConfig.TargetList
+      TargetGroupAttributes: !GetAtt LZtoDMZ0x0EndpointListenerConfig.TargetGroupAttributesList
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-LZtoDMZ0TG"]]
+      HealthCheckProtocol: !Ref LZtoDMZ0x0EndpointListenerHealthCheckProtocol
+      HealthCheckIntervalSeconds: !GetAtt LZtoDMZ0x0EndpointListenerConfig.HealthCheckIntervalSeconds
+      HealthCheckPath: !If [HasLZtoDMZ0x0HealthHTTPHealthCheck, !GetAtt LZtoDMZ0x0EndpointListenerConfig.HealthCheckPath,
+        !Ref AWS::NoValue]
+      HealthCheckPort: !GetAtt LZtoDMZ0x0EndpointListenerConfig.HealthCheckPort
+      HealthyThresholdCount: !GetAtt LZtoDMZ0x0EndpointListenerConfig.HealthyThresholdCount
+      UnhealthyThresholdCount: !GetAtt LZtoDMZ0x0EndpointListenerConfig.UnhealthyThresholdCount
+       # TODO: Can't have an HTTP matcher object while targets use TCP. Should complexify a bit the CF template to handle this exception
+       #Matcher: !If [ HasLZtoDMZ0x0HealthHTTPHealthCheck, !GetAtt LZtoDMZ0x0EndpointListenerConfig.Matcher, !Ref AWS::NoValue ]
+
+  LZtoDMZ0x0NetworkLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: HasLZtoDMZ0x0DirectionListener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref LZtoDMZ0x0NetworkLoadBalancerTargetGroup
+      LoadBalancerArn: !Ref LZtoDMZ0NetworkLoadBalancer
+      Port: !GetAtt LZtoDMZ0x0EndpointListenerConfig.ListenerPort
+      Protocol: !GetAtt LZtoDMZ0x0EndpointListenerConfig.ListenerProtocol
+
+  LZtoDMZ0x0NetworkLoadBalancerListenerCert:
+    Type: AWS::ElasticLoadBalancingV2::ListenerCertificate
+    Condition: HasLZtoDMZ0x0DirectionListenerCertificate
+    Properties:
+      Certificates: !Split [",", !Ref LZtoDMZ0x0EndpointListenerCertificateARNs]
+      ListenerArn: !Ref LZtoDMZ0x0NetworkLoadBalancerListener
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-LZtoDMZ0LBCERT"]]
+  LZtoDMZ0x1EndpointListenerConfig:
+    Type: "Custom::HelperLib"
+    Condition: HasLZtoDMZ0x1DirectionListener
+    Properties:
+      ServiceToken: !GetAtt HelperLib.Arn
+      Helper: EndpointListenerConfig
+      EndpointListenerSpecifications: !Ref LZtoDMZ0x1EndpointListenerSpecifications
+      Region: !Sub "${AWS::Region}"
+      HealthCheckProtocol: !Ref LZtoDMZ0x1EndpointListenerHealthCheckProtocol
+
+  LZtoDMZ0x1NetworkLoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: HasLZtoDMZ0x1DirectionListener
+    Properties:
+      Port: !GetAtt LZtoDMZ0x1EndpointListenerConfig.TargetPort
+      Protocol: !GetAtt LZtoDMZ0x1EndpointListenerConfig.TargetProtocol
+      VpcId: !Ref DMZVPC
+      TargetType: !GetAtt LZtoDMZ0x1EndpointListenerConfig.TargetType
+      Targets: !GetAtt LZtoDMZ0x1EndpointListenerConfig.TargetList
+      TargetGroupAttributes: !GetAtt LZtoDMZ0x1EndpointListenerConfig.TargetGroupAttributesList
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-LZtoDMZ0TG"]]
+      HealthCheckProtocol: !Ref LZtoDMZ0x1EndpointListenerHealthCheckProtocol
+      HealthCheckIntervalSeconds: !GetAtt LZtoDMZ0x1EndpointListenerConfig.HealthCheckIntervalSeconds
+      HealthCheckPath: !If [HasLZtoDMZ0x1HealthHTTPHealthCheck, !GetAtt LZtoDMZ0x1EndpointListenerConfig.HealthCheckPath,
+        !Ref AWS::NoValue]
+      HealthCheckPort: !GetAtt LZtoDMZ0x1EndpointListenerConfig.HealthCheckPort
+      HealthyThresholdCount: !GetAtt LZtoDMZ0x1EndpointListenerConfig.HealthyThresholdCount
+      UnhealthyThresholdCount: !GetAtt LZtoDMZ0x1EndpointListenerConfig.UnhealthyThresholdCount
+       # TODO: Can't have an HTTP matcher object while targets use TCP. Should complexify a bit the CF template to handle this exception
+       #Matcher: !If [ HasLZtoDMZ0x1HealthHTTPHealthCheck, !GetAtt LZtoDMZ0x1EndpointListenerConfig.Matcher, !Ref AWS::NoValue ]
+
+  LZtoDMZ0x1NetworkLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: HasLZtoDMZ0x1DirectionListener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref LZtoDMZ0x1NetworkLoadBalancerTargetGroup
+      LoadBalancerArn: !Ref LZtoDMZ0NetworkLoadBalancer
+      Port: !GetAtt LZtoDMZ0x1EndpointListenerConfig.ListenerPort
+      Protocol: !GetAtt LZtoDMZ0x1EndpointListenerConfig.ListenerProtocol
+
+  LZtoDMZ0x1NetworkLoadBalancerListenerCert:
+    Type: AWS::ElasticLoadBalancingV2::ListenerCertificate
+    Condition: HasLZtoDMZ0x1DirectionListenerCertificate
+    Properties:
+      Certificates: !Split [",", !Ref LZtoDMZ0x1EndpointListenerCertificateARNs]
+      ListenerArn: !Ref LZtoDMZ0x1NetworkLoadBalancerListener
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-LZtoDMZ0LBCERT"]]
+  LZtoDMZ0x2EndpointListenerConfig:
+    Type: "Custom::HelperLib"
+    Condition: HasLZtoDMZ0x2DirectionListener
+    Properties:
+      ServiceToken: !GetAtt HelperLib.Arn
+      Helper: EndpointListenerConfig
+      EndpointListenerSpecifications: !Ref LZtoDMZ0x2EndpointListenerSpecifications
+      Region: !Sub "${AWS::Region}"
+      HealthCheckProtocol: !Ref LZtoDMZ0x2EndpointListenerHealthCheckProtocol
+
+  LZtoDMZ0x2NetworkLoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: HasLZtoDMZ0x2DirectionListener
+    Properties:
+      Port: !GetAtt LZtoDMZ0x2EndpointListenerConfig.TargetPort
+      Protocol: !GetAtt LZtoDMZ0x2EndpointListenerConfig.TargetProtocol
+      VpcId: !Ref DMZVPC
+      TargetType: !GetAtt LZtoDMZ0x2EndpointListenerConfig.TargetType
+      Targets: !GetAtt LZtoDMZ0x2EndpointListenerConfig.TargetList
+      TargetGroupAttributes: !GetAtt LZtoDMZ0x2EndpointListenerConfig.TargetGroupAttributesList
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-LZtoDMZ0TG"]]
+      HealthCheckProtocol: !Ref LZtoDMZ0x2EndpointListenerHealthCheckProtocol
+      HealthCheckIntervalSeconds: !GetAtt LZtoDMZ0x2EndpointListenerConfig.HealthCheckIntervalSeconds
+      HealthCheckPath: !If [HasLZtoDMZ0x2HealthHTTPHealthCheck, !GetAtt LZtoDMZ0x2EndpointListenerConfig.HealthCheckPath,
+        !Ref AWS::NoValue]
+      HealthCheckPort: !GetAtt LZtoDMZ0x2EndpointListenerConfig.HealthCheckPort
+      HealthyThresholdCount: !GetAtt LZtoDMZ0x2EndpointListenerConfig.HealthyThresholdCount
+      UnhealthyThresholdCount: !GetAtt LZtoDMZ0x2EndpointListenerConfig.UnhealthyThresholdCount
+       # TODO: Can't have an HTTP matcher object while targets use TCP. Should complexify a bit the CF template to handle this exception
+       #Matcher: !If [ HasLZtoDMZ0x2HealthHTTPHealthCheck, !GetAtt LZtoDMZ0x2EndpointListenerConfig.Matcher, !Ref AWS::NoValue ]
+
+  LZtoDMZ0x2NetworkLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: HasLZtoDMZ0x2DirectionListener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref LZtoDMZ0x2NetworkLoadBalancerTargetGroup
+      LoadBalancerArn: !Ref LZtoDMZ0NetworkLoadBalancer
+      Port: !GetAtt LZtoDMZ0x2EndpointListenerConfig.ListenerPort
+      Protocol: !GetAtt LZtoDMZ0x2EndpointListenerConfig.ListenerProtocol
+
+  LZtoDMZ0x2NetworkLoadBalancerListenerCert:
+    Type: AWS::ElasticLoadBalancingV2::ListenerCertificate
+    Condition: HasLZtoDMZ0x2DirectionListenerCertificate
+    Properties:
+      Certificates: !Split [",", !Ref LZtoDMZ0x2EndpointListenerCertificateARNs]
+      ListenerArn: !Ref LZtoDMZ0x2NetworkLoadBalancerListener
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-LZtoDMZ0LBCERT"]]
+
+  LZtoDMZ0VPCEndpoint:
+    Type: AWS::EC2::VPCEndpointService
+    Condition: HasLZtoDMZ0Direction
+    Properties:
+      AcceptanceRequired: !GetAtt LZtoDMZ0EndpointConfig.AcceptanceRequired
+      NetworkLoadBalancerArns: [!Ref LZtoDMZ0NetworkLoadBalancer]
+
+  LZtoDMZ0VPCEndpointPermissions:
+    Type: AWS::EC2::VPCEndpointServicePermissions
+    Condition: HasLZtoDMZ0Direction
+    Properties:
+      AllowedPrincipals: !If [HasLZtoDMZ0AllowedPrincipals, !Split [",", !Ref LZtoDMZ0VPCEndpointAllowedPrincipals],
+        []]
+      ServiceId: !Ref LZtoDMZ0VPCEndpoint
+
+  LZtoDMZ0VPCEndpointInterface:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: HasLZtoDMZ0Direction
+    Properties:
+      PrivateDnsEnabled: false
+      SecurityGroupIds: !GetAtt LZtoDMZ0EndpointConfig.SecurityGroupIds
+      ServiceName: !Sub
+      - "com.amazonaws.vpce.${AWS::Region}.${ServiceId}"
+      - ServiceId: !Ref LZtoDMZ0VPCEndpoint
+      SubnetIds: !GetAtt GetLZVpcConfig.SubnetIds
+      VpcEndpointType: Interface
+      VpcId: !GetAtt GetLZVpcConfig.VpcId
+
+  LZtoDMZ0FinalizeEndpointConfig:
+    Type: "Custom::HelperLib"
+    Condition: HasLZtoDMZ0Direction
+    Properties:
+      ServiceToken: !GetAtt HelperLib.Arn
+      Helper: FinalizeEndpointConfig
+      EndpointDnsEntries: !GetAtt LZtoDMZ0VPCEndpointInterface.DnsEntries
+
+  LZtoDMZ0VPCEndpointDNSEntry:
+    Type: AWS::Route53::RecordSetGroup
+    Condition: HasLZtoDMZ0EndpointDNSSpecs
+    Properties:
+      HostedZoneName: !GetAtt LZtoDMZ0EndpointConfig.DNS.ZoneName
+      Comment: Friendly name for the VPC endpoint 0 in LZ VPC
+      RecordSets:
+      - Name: !GetAtt LZtoDMZ0EndpointConfig.DNS.FQDN
+        Type: A
+        AliasTarget:
+          HostedZoneId: !GetAtt LZtoDMZ0FinalizeEndpointConfig.DNS.HostedZoneId
+          DNSName: !GetAtt LZtoDMZ0FinalizeEndpointConfig.DNS.DNSName
+
+
+
+   ## 
+   # Configure DMZtoLZ endpoint
+   #
+  DMZtoLZ0EndpointConfig:
+    Type: "Custom::HelperLib"
+    Properties:
+      ServiceToken: !GetAtt HelperLib.Arn
+      Helper: EndpointConfig
+      EndpointSpecifications: !Ref DMZtoLZ0EndpointSpecifications
+      Region: !Sub "${AWS::Region}"
+      EndpointDNSSpecs: !Ref DMZtoLZ0EndpointDNSSpecs
+
+
+  DMZtoLZ0EndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub "${AWS::StackName} - Security Group for DMZ Endpoint\
+        \ 0"
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        FromPort: -1
+        ToPort: -1
+        CidrIp: 0.0.0.0/0
+      SecurityGroupIngress: !GetAtt DMZtoLZ0EndpointConfig.DMZEndpointSecurityGroupIngressRules
+      VpcId: !Ref DMZVPC
+      Tags:
+      - Key: Name
+        Value: !Join ['', [!Ref "AWS::StackName", "-DMZEndpointSecurityGroup0"]]
+
+  DMZtoLZ0VPCEndpoint:
+    Type: AWS::EC2::VPCEndpointService
+    Condition: HasDMZtoLZ0Direction
+    Properties:
+      AcceptanceRequired: !GetAtt DMZtoLZ0EndpointConfig.AcceptanceRequired
+      NetworkLoadBalancerArns: !GetAtt DMZtoLZ0EndpointConfig.LoadBalancerArnsList
+
+  DMZtoLZ0VPCEndpointPermissions:
+    Type: AWS::EC2::VPCEndpointServicePermissions
+    Condition: HasDMZtoLZ0Direction
+    Properties:
+      AllowedPrincipals: !If [HasDMZtoLZ0AllowedPrincipals, !Split [",", !Ref DMZtoLZ0VPCEndpointAllowedPrincipals],
+        []]
+      ServiceId: !Ref DMZtoLZ0VPCEndpoint
+
+  DMZtoLZ0VPCEndpointInterface:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: HasDMZtoLZ0Direction
+    Properties:
+      PrivateDnsEnabled: false
+      SecurityGroupIds: [!Ref DMZtoLZ0EndpointSecurityGroup]
+      ServiceName: !Sub
+      - "com.amazonaws.vpce.${AWS::Region}.${ServiceId}"
+      - ServiceId: !Ref DMZtoLZ0VPCEndpoint
+      SubnetIds:
+      - !Ref Subnet0
+      - !Ref Subnet1
+      - !If [HasSubnet2, !Ref Subnet2, !Ref AWS::NoValue]
+      - !If [HasSubnet3, !Ref Subnet3, !Ref AWS::NoValue]
+      - !If [HasSubnet4, !Ref Subnet4, !Ref AWS::NoValue]
+      VpcEndpointType: Interface
+      VpcId: !Ref DMZVPC
+
+  DMZtoLZ0FinalizeEndpointConfig:
+    Type: "Custom::HelperLib"
+    Condition: HasDMZtoLZ0Direction
+    Properties:
+      ServiceToken: !GetAtt HelperLib.Arn
+      Helper: FinalizeEndpointConfig
+      EndpointDnsEntries: !GetAtt DMZtoLZ0VPCEndpointInterface.DnsEntries
+
+  DMZtoLZ0VPCEndpointDNSEntry:
+    Type: AWS::Route53::RecordSetGroup
+    Condition: HasDMZtoLZ0EndpointDNSSpecs
+    Properties:
+      HostedZoneName: !GetAtt DMZtoLZ0EndpointConfig.DNS.ZoneName
+      Comment: Friendly name for the VPC endpoint 0 in LZ VPC
+      RecordSets:
+      - Name: !GetAtt DMZtoLZ0EndpointConfig.DNS.FQDN
+        Type: A
+        AliasTarget:
+          HostedZoneId: !GetAtt DMZtoLZ0FinalizeEndpointConfig.DNS.HostedZoneId
+          DNSName: !GetAtt DMZtoLZ0FinalizeEndpointConfig.DNS.DNSName
+
+
+
+Outputs:
+  DMZHostedZone:
+    Condition: HasDMZHostedZone
+    Value: !Ref DMZHostedZone
+  DMZVPC:
+    Value: !Ref DMZVPC
+  Subnet0:
+    Value: !Ref Subnet0
+  Subnet1:
+    Value: !Ref Subnet0
+  Subnet2:
+    Condition: HasSubnet2
+    Value: !Ref Subnet2
+  Subnet3:
+    Condition: HasSubnet3
+    Value: !Ref Subnet3
+  Subnet4:
+    Condition: HasSubnet4
+    Value: !Ref Subnet4
+
+
+
+  LZtoDMZ0NetworkLoadBalancer:
+    Condition: HasLZtoDMZ0Direction
+    Value: !Ref LZtoDMZ0NetworkLoadBalancer
+
+  LZtoDMZ0x0NetworkLoadBalancerTargetGroup:
+    Condition: HasLZtoDMZ0x0DirectionListener
+    Value: !Ref LZtoDMZ0x0NetworkLoadBalancerTargetGroup
+  LZtoDMZ0x0NetworkLoadBalancerListener:
+    Condition: HasLZtoDMZ0x0DirectionListener
+    Value: !Ref LZtoDMZ0x0NetworkLoadBalancerListener
+
+  LZtoDMZ0x1NetworkLoadBalancerTargetGroup:
+    Condition: HasLZtoDMZ0x1DirectionListener
+    Value: !Ref LZtoDMZ0x1NetworkLoadBalancerTargetGroup
+  LZtoDMZ0x1NetworkLoadBalancerListener:
+    Condition: HasLZtoDMZ0x1DirectionListener
+    Value: !Ref LZtoDMZ0x1NetworkLoadBalancerListener
+
+  LZtoDMZ0x2NetworkLoadBalancerTargetGroup:
+    Condition: HasLZtoDMZ0x2DirectionListener
+    Value: !Ref LZtoDMZ0x2NetworkLoadBalancerTargetGroup
+  LZtoDMZ0x2NetworkLoadBalancerListener:
+    Condition: HasLZtoDMZ0x2DirectionListener
+    Value: !Ref LZtoDMZ0x2NetworkLoadBalancerListener
+
+
+  LZtoDMZ0VPCEndpoint:
+    Condition: HasLZtoDMZ0Direction
+    Value: !Ref LZtoDMZ0VPCEndpoint
+  LZtoDMZ0VPCEndpointInterface:
+    Condition: HasLZtoDMZ0Direction
+    Value: !Ref LZtoDMZ0VPCEndpointInterface
+
+
+
+
+  DMZtoLZ0EndpointSecurityGroup:
+    Value: !Ref DMZtoLZ0EndpointSecurityGroup
+
+  DMZtoLZ0VPCEndpoint:
+    Condition: HasDMZtoLZ0Direction
+    Value: !Ref DMZtoLZ0VPCEndpoint
+  DMZtoLZ0VPCEndpointInterface:
+    Condition: HasDMZtoLZ0Direction
+    Value: !Ref DMZtoLZ0VPCEndpointInterface
+
+

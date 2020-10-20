@@ -1,0 +1,5 @@
+ruamel.yaml
+boto3
+jinja2
+crhelper
+ipaddress

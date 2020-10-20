@@ -1,0 +1,12 @@
+#!/bin/bash -e
+
+rm -fr .venv
+python3 -m venv .venv 
+if [ "$1" == "--upgrade" ]; then
+	echo "Upgrading..."
+	.venv/bin/pip install --upgrade -r requirements.txt && \
+	.venv/bin/pip freeze >requirements-frozen.txt
+else
+	.venv/bin/pip install --upgrade -r requirements-frozen.txt
+fi
+echo "Done!"
