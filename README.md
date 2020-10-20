@@ -60,10 +60,10 @@ Please see file [default-parameters.yaml](default-parameters.yaml) for comprehen
 
 * The minimal size of the 'DMZ VPC' is 64 IP addresses and 2 subnets.
 * As per VPC Endpoint design, the DMZ and LZ VPCs must share subnets and resources **in the same AZs**. If there is a mismatch, some resources won't be reachable.
-   Ex: 
 
-	DMZ VPC has subnets in AZ 'a' and 'b'. LZ VPC has resources in AZ 'b' and 'c' that need to cross the VPC Endpoints.
-	> Only communication of resources in AZ 'b' will be able to cross the VPC EndPoints.
+	Ex: 
+		DMZ VPC has subnets in AZ 'a' and 'b'. LZ VPC has resources in AZ 'b' and 'c' that need to cross the VPC Endpoints.
+		> Only communication of resources in AZ 'b' will be able to cross the VPC EndPoints.
 		
 
 # Licensing
