@@ -13,7 +13,7 @@
 ###
 # DMZtoLZ communication direction
 - ParameterKey:   DMZtoLZ0EndpointSpecifications
-  ParameterValue: LoadBalancerArns=<LZ_LOADBALANCER_ARN>;TrustedDMZClients=10.0.0.127
+  ParameterValue: LoadBalancerArns=arn:aws:elasticloadbalancing:eu-west-1:875736396844:loadbalancer/net/CS-De-LoadB-13BI67GWUM6C2/f504a7aa83c6c0f1;TrustedDMZClients=10.0.0.127
 - ParameterKey:   DMZtoLZ0EndpointDNSSpecs
   ParameterValue: FQDN=endpoint.dmzdomain.internal
 - ParameterKey:   DMZtoLZ0VPCEndpointAllowedPrincipals
@@ -22,9 +22,9 @@
 ###
 # LZtoDMZ communication direction
 - ParameterKey:   LZtoDMZ0EndpointSpecifications
-  ParameterValue: LoadBalancerAttributes=load_balancing.cross_zone.enabled:true;EndpointSecurityGroupIds=<LZ_SECURITY_GROUP_IDS>
+  ParameterValue: LoadBalancerAttributes=load_balancing.cross_zone.enabled:true;EndpointSecurityGroupIds=sg-0251632853783c437,sg-0e45eb500623e68ad
 - ParameterKey:   LZtoDMZ0EndpointDNSSpecs
-  ParameterValue: FQDN=test.lzinternaldomain  # Please change endpoint FQDN at Landing Zone side. Let an empty string if you do not a name for the endpoint
+  ParameterValue: FQDN=test.lzinternaldomain  # Please change name for the endpoint at Landing Zone side. Set an empty string if you do not a name for the endpoint
 - ParameterKey:   LZtoDMZ0VPCEndpointAllowedPrincipals
   ParameterValue: ""
   # Listener 0
