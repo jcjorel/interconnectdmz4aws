@@ -40,8 +40,8 @@
 #
 #    LoadBalancerArns (required): List of ARNs
 #       List of NLB ARNs to associate to the DMZ VPC endpoint exposing them to VPC resources.
-#    TrustedDMZClients (recommended): List of IP addresses, IP CIDR networks and SecurityGroups
-#       This filed controls directly the Ingress rules of the Security group associated to the DMZ endpoint.
+#    TrustedDMZClients (recommended): List of IP addresses, IP CIDR networks, SecurityGroups and SecurityGroups with OwnerId (sg-xxxx:<account_number>)
+#       This field controls directly the Ingress rules of the Security group associated to the DMZ endpoint.
 #       If this field is undefined, no one can access the endpoint.
 - ParameterKey:   DMZtoLZ0EndpointSpecifications
   ParameterValue: ""
@@ -120,8 +120,6 @@
 #
 #    HealthCheckIntervalSeconds, HealthCheckPath, HealthCheckPort, HealthyThresholdCount, UnhealthyThresholdCount (optional):
 #       Health check attributes as specified in https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-targetgroup.html
-#    Matcher.HttpCode: Integer
-#       HttpCode value for the Matcher object as specified in URL above.
 - ParameterKey:   LZtoDMZ0x0EndpointListenerSpecifications
   ParameterValue: ""
 #
