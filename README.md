@@ -20,10 +20,10 @@ The solution CloudFormation template deploys the following components:
 * One VPC (aka 'DMZ VPC')
 	- One 'DMZ Hosted zone' with a customer domain name (optional),
 	- One 'Route 53 Inbound Resolver endpoint' (and associated Security Group) to allow DNS resolution across VPN, VPC Peering and DirectConnect,
-* Resources that allow traffic initiated from the DMZ side (Upper part of the Schema):
+* Resources that allow traffic initiated from the DMZ side *(Upper part of the Schema)*:
 	- One VPC Endpoint and associated Security group that exposes an existing NLB located in the 'LandingZone' side,
 	(VPC Peering, VGW, Customer Gateway and VPN connection displayed on the schema, must be provisioned by other means and are not managed by the solution).
-* Resources that allow traffic initiated from the Landing Zone side (lower part fo the Schema):
+* Resources that allow traffic initiated from the Landing Zone side *(Lower part fo the Schema)*:
 	- One NLB connected to the DMZ VPC subnets,
 	- One VPC Endpoint (and associated Security Group) connected to the Landing Zone VPC,
 	- Up to 3 NLB Listeners and associated Targetgroups to expose RED side resources,
