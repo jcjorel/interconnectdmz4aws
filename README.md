@@ -45,7 +45,7 @@ The solution CloudFormation template deploys the following components:
 
 The [example-parameters.yaml](example-parameters.yaml) file describes a 2-way configuration with 2 listeners defined for the direction 'from LZ to DMZ'.
 
-The solution can also work purely assymetric in one-way configuration (ex: only allowing communications from the LZ or toward the LZ): Simply omit the configuration of
+The solution can also work purely assymetric with one-way configuration (ex: only allowing communications from the LZ or toward the LZ): Simply omit the configuration of
 the direction that you do not want to use.
 
 # Documentation
