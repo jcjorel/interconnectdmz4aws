@@ -38,12 +38,14 @@ The solution CloudFormation template deploys the following components:
   - Create a Route53 Hosted Zone attached to your "Landing Zone" VPC named `lzinternaldomain` (Can be changed to any Route53 supported domain name.),
   - Create a NLB in the Landing Zone VPC that will be exposed to the DMZ side (its ARN will be used later for the <LZ_LOADBALANCER_ARN> information),
   - Create a Security Group in the Landing Zone VPC with sources allowed to access the VPC Endpoint used to reach the DMZ (its Id will be used later for the <LZ_SECURITY_GROUP_IDS> information)
+* Create a S3 Bucket that will hold the solution CloudFormaiton template and Lambda ZIP files
 * Git clone the repository
 * Edit the file 'example-parameters.yaml' and replace <LZ_LOADBALANCER_ARN> and <LZ_SECURITY_GROUP_IDS> with previoulsy collected info. 
 * Launch *./deploy_or_update.sh <S3_bucket_where_to_push_solution_artifacts> <S3_prefix> MyFirstDMZ [example-parameters.yaml](example-parameters.yaml)*.
 
 The [example-parameters.yaml](example-parameters.yaml) file describes a 2-way configuration with 2 listeners defined for the direction 'from LZ to DMZ'.
-The solution can also work purely assymetric in one-way configuration (ex: only communications from the LZ or toward the LZ): Simply omit the configuration of
+
+The solution can also work purely assymetric in one-way configuration (ex: only allowing communications from the LZ or toward the LZ): Simply omit the configuration of
 the direction that you do not want to use.
 
 # Documentation
