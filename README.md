@@ -14,7 +14,7 @@ A typical use-case is interconnecting a customer with business partners. The des
 ![AWS Interconnect DMZ Pattern](docs/schema.png)
 
 The 'Interconnect DMZ Pattern for AWS' enables 2-way communications between the 'DMZ' side (RED side) and the customer 'Landing Zone' side (GREEN side).
-The 'DMZ' side is compounded of a DMZ VPC deployed by the solution and interconnections to connect to externally gouverned network resources.
+The 'DMZ' side is compound of a DMZ VPC deployed by the solution and interconnections to connect to externally gouverned network resources.
 
 The solution CloudFormation template deploys the following components:
 * One VPC (aka 'DMZ VPC')
