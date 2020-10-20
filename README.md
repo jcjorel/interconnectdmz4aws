@@ -25,7 +25,7 @@ The solution CloudFormation template deploys the following components:
 		* (VPC Peering, VGW, Customer Gateway and VPN connection displayed on the schema, must be provisioned by other means and are not managed by the solution).
 * Resources that allow traffic initiated from the Landing Zone side *(Lower part fo the Schema)*:
 	- One NLB connected to the DMZ VPC subnets,
-	- One VPC Endpoint (and associated Security Group) connected to the Landing Zone VPC,
+	- One VPC Endpoint connected to the Landing Zone VPC,
 	- Up to 3 NLB Listeners and associated Targetgroups to expose RED side resources,
 	- One user configurable DNS Entry in the Landing Zone hosted zone for the VPC Endpoint (optional).
 
