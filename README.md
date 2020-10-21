@@ -35,6 +35,7 @@ The solution CloudFormation template deploys the following components:
 
 * The AWS PrivateLink technology offers a managed NAT solution to allow secure communications between incompatible IP Address plans,
 * The Route53 Inbound Resolver endpoint in the DMZ VPC allows DNS resolutions of VPC Endpoints names from external resources (through VPC Peering, VPN connections, DirectConnect)
+   - The Inbound resolver address is always at 'DMZ Subnet CIDR +4'. Ex: If DMZ subnet has CIDR 10.1.2.0, the Route53 Inbound Resolver for this subnet is 10.1.2.4
 * A ServerLess based architecture reduces costs to operate.
 
 # Getting started
