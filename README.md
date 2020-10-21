@@ -1,9 +1,9 @@
-# Interconnect DMZ Pattern for AWS
+# ServerLess Interconnect DMZ Pattern for AWS
 
 AWS Cloud customers that want to seggregate their resources at network level have a large set of options (Security Group, NACL, PrivateLink...).
 As the needs become more recurrent, some use-cases can be addressed with patterns.
 
-The 'Interconnect DMZ Pattern for AWS' is an automated orchestration of security services to interconnnect securely environments that do not
+The 'ServerLess Interconnect DMZ Pattern for AWS' is an automated orchestration of security services to interconnnect securely environments that do not
 share the same governance. Example of constraints:    
 * Different IP Address plan management (possibily colliding),
 * Different Security rules. 
