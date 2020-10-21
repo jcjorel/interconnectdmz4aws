@@ -34,7 +34,7 @@ The solution CloudFormation template deploys the following components:
 # Key benefits
 
 * The AWS PrivateLink technology offers a managed NAT solution to allow secure communications between incompatible IP Address plans,
-* The Route53 Inbound Resolver endpoint in the DMZ VPC allows DNS resolutions of VPC Endpoints names from external resources (through VPC Peering, VPN connections, Directconnect)
+* The Route53 Inbound Resolver endpoint in the DMZ VPC allows DNS resolutions of VPC Endpoints names from external resources (through VPC Peering, VPN connections, DirectConnect)
 * A ServerLess based architecture reduces costs to operate.
 
 # Getting started
