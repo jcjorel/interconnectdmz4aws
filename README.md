@@ -31,6 +31,12 @@ The solution CloudFormation template deploys the following components:
 
 > Note: The [CloudFormation template](delivery/template.yaml) is compiled from a Jinja template that can simply be regenerated to manage more NLBs, VPC Endpoints and NLB listeners if needed.
 
+# Key benefits
+
+* The AWS PrivateLink technology offers a managed NAT solution to allow secure communications between incompatible IP Address plans,
+* The Route53 Inbound Resolver endpoint in the DMZ VPC allows DNS resolutions of VPC Endpoints names from external resources (through VPC Peering, VPN connections, Directconnect)
+* A ServerLess based architecture reduces costs to operate.
+
 # Getting started
 
 * Prepare your 'Landing Zone' VPC:
