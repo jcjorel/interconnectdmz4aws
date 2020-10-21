@@ -49,7 +49,7 @@ Ex: If a DMZ subnet has CIDR 10.1.2.0, the Route53 Inbound Resolver for this sub
 * Create a S3 Bucket that will hold the solution CloudFormation template and Lambda ZIP files
 * Git clone the repository
 * Edit the file 'example-parameters.yaml' and replace <LZ_LOADBALANCER_ARN> and <LZ_SECURITY_GROUP_IDS> with previoulsy collected info. 
-* Launch *./deploy_or_update.sh <S3_bucket_where_to_push_solution_artifacts> <S3_prefix> MyFirstDMZ [example-parameters.yaml](example-parameters.yaml)*.
+* Launch *./deploy_or_update.sh <S3_bucket_where_to_push_solution_artifacts> <S3_prefix> MyFirstDMZ example-parameters.yaml*.
 
 The [example-parameters.yaml](example-parameters.yaml) file describes a 2-way configuration with 2 listeners defined for the direction 'from LZ to DMZ'.
 
