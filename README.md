@@ -9,7 +9,7 @@ share the same governance. Example of constraints:
 * Different Security rules. 
 * Different internal DNS structures (possible colliding).
 
-A typical use-case is interconnecting a customer with business partners. The described solution offers a fully managed way to do it with standard AWS services.
+A typical use-case is interconnecting a customer with business partners. The described solution offers a fully managed and ServerLess way to do it with standard AWS services.
 
 ![AWS Interconnect DMZ Pattern](docs/schema.png)
 
