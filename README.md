@@ -71,7 +71,7 @@ Please see file [default-parameters.yaml](default-parameters.yaml) for comprehen
 
 > Ex: 
 DMZ VPC has subnets in AZ 'a' and 'b'. LZ VPC has resources in AZ 'b' and 'c' that need to cross the VPC Endpoints.
-=> Only communication of resources in AZ 'b' will be able to cross the VPC EndPoints.
+=> Only communications of resources in AZ 'b' will be able to cross the VPC EndPoints.
 		
 
 # Licensing
