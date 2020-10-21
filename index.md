@@ -9,6 +9,6 @@ share the same governance. Example of constraints:
 
 A typical use-case is interconnecting a customer with business partners. The described solution offers a fully managed and ServerLess way to do it with standard AWS services.
 
-![Architecture schema](https://github.com/jcjorel/interconnectdmz4aws/blob/main/docs/schema.png)
+![Architecture schema](https://raw.githubusercontent.com/jcjorel/interconnectdmz4aws/main/docs/schema.png)
 
 Please visit the [project repository](https://github.com/jcjorel/interconnectdmz4aws/) for more information.
