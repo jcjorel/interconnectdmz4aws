@@ -29,7 +29,7 @@ The solution CloudFormation template deploys the following components:
 	- Up to 3 NLB Listeners and associated Targetgroups to expose RED side resources,
 	- One user configurable DNS Entry in the Landing Zone hosted zone for the VPC Endpoint (optional).
 
-> Note: The [CloudFormation template](delivery/template.yaml) is compiled from a Jinja template that can simply be regenerated to manage more NLBs, VPC Endpoints and NLB listeners if needed.
+> Note: The [CloudFormation template](delivery/template.yaml) is compiled from a Jinja template that can simply be regenerated to manage more NLBs, VPC Endpoints and NLB listeners if needed. **TODO: Remove Jinja2 processing and use a CloudFormation Macro instead.**
 
 # Key benefits
 
