@@ -469,7 +469,7 @@ Outputs:
    Subnet0:
      Value: !Ref Subnet0
    Subnet1:
-     Value: !Ref Subnet0
+     Value: !Ref Subnet1
    Subnet2:
      Condition: HasSubnet2
      Value: !Ref Subnet2
